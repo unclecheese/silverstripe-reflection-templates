@@ -1,0 +1,16 @@
+{
+    "name": "unclecheese/reflection-templates",
+    "description": "Provides introspection of SilverStripe templates with an API for getting variables and blocks, much like the PHP ReflectionClass.",
+    "type": "silverstripe-module",
+    "keywords": ["silverstripe", "templates"],
+	"license": "BSD-3-Clause",
+    "authors": [
+    {
+        "name": "Uncle Cheese",
+        "email": "unclecheese@leftandmain.com"
+    }],
+    "require": {
+        "silverstripe/framework": "~3.1"
+    }
+    
+}
