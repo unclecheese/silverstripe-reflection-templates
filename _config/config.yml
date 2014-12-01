@@ -1,0 +1,11 @@
+---
+Name: reflection-templates
+---
+ReflectionTemplate:
+  infer_datatype:
+    Image: Image
+    Photo: Image
+    File: File
+    Download: File
+    Date: Date
+  default_datatype: Text
