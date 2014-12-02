@@ -15,13 +15,17 @@ Given a template such as this:
   <h2>$Headline</h2>
   <div>$Image.CroppedImage(200,200)</div>
   <h3>$Category.Title</h3>
+  <% if $Featured %>it\'s featured<% end_if %>
   <ul>
   <% loop $Items %>
     <li>$Title ($Date.Nice)</li>
+    <% if $Articles %>
     <ul>
-      <% loop $Artcles %>
-      <li>This article, called $ArticleTitle is related to $Up.Title</li>
+      <% loop $Articles %>
+      <li>This article, called $ArticleTitle is related to $Up.Title <% if $Published %>published<% end _if %></li>
       <% end_loop %>
+     </ul>
+    <% end_if %>
   <% end_loop %>
   
   <% with $FeaturedProduct %>
@@ -35,36 +39,40 @@ We can introspect it using a `ReflectionTemplate` like so:
  $reflector = ReflectionTemplate::create();
  $reflector->process(file_get_contents('/path/to/template.ss'));
   
-foreach($reflector->getTopLevelVars() as $varName => $type) {
-	echo "The template variable $varName is likely a $type\n";
-}
-
-foreach($reflector->getTopLevelBlocks() as $block) {
-	echo "There is a block at the top level named {$block->getName()}\n";
-	echo $block->isLoop() ? "\tThis block is a loop\n" : "\tThis block is a with\n";
-	foreach($block->getVars() as $var => $type) {
-		echo "\tThe top level block {$block->getName()} contains a variable named $var that is likely a $type\n";
-	}
-	foreach($block->getChildren() as $child) {
-		echo "\tThere is a child block named {$child->getName()}. It has the following vars:\n";
-		foreach($child->getVars() as $v => $t) {
-			echo "\t\tThe nested block {$child->getName()} contains a variable named $v that is likely a $t\n";
-		}
-	}
-}	 	
+ foreach($reflector->getTopLevelVars() as $varName => $type) {
+ 	echo "The template variable $varName is likely a $type\n";
+ }
+ 
+ foreach($reflector->getTopLevelBlocks() as $block) {
+ 	 echo "There is a block at the top level named {$block->getName()}\n";
+ 	 echo $block->isLoop() ? "\tThis block is a loop\n" : "\tThis block is a with\n";
+ 	 foreach($block->getVars() as $var => $type) {
+ 		echo "\tThe top level block {$block->getName()} contains a variable named $var that is likely a $type\n";
+ 	 }
+ 	 foreach($block->getChildren() as $child) {
+ 		echo "\tThere is a child block named {$child->getName()}. It has the following vars:\n";
+ 		foreach($child->getVars() as $v => $t) {
+ 			echo "\t\tThe nested block {$child->getName()} contains a variable named $v that is likely a $t\n";
+ 		}
+ 	 }
+ }	 	
+	 	
 ```
+
 This produces the following result:
 
 ```
 The template variable Headline is likely a Text
 The template variable Image is likely a Image
 The template variable Category is likely a has_one
+The template variable Featured is likely a Boolean
 There is a block at the top level named Items
 	This block is a loop
 	The top level block Items contains a variable named Title that is likely a Text
 	The top level block Items contains a variable named Date that is likely a Date
-	There is a child block named Artcles. It has the following vars:
-		The nested block Artcles contains a variable named ArticleTitle that is likely a Text
+	There is a child block named Articles. It has the following vars:
+		The nested block Articles contains a variable named ArticleTitle that is likely a Text
+		The nested block Articles contains a variable named Published that is likely a Boolean
 There is a block at the top level named FeaturedProduct
 	This block is a with
 	The top level block FeaturedProduct contains a variable named Description that is likely a Text
