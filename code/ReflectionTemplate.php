@@ -406,6 +406,12 @@ class ReflectionTemplate_Block extends Object {
 	 * @var string
 	 */
 	protected $blockInnerContents;
+
+	/**
+	 * The opening syntax for this block, e.g. <% loop $Items.limit(5) %>
+	 * @var string
+	 */
+	protected $openingDelimiter;
 	
 	/**
 	 * A list of the nested blocks
@@ -467,9 +473,11 @@ class ReflectionTemplate_Block extends Object {
 		
 		preg_match("/<% (loop|with) [\$]?([A-Za-z0-9_]+)(.*?) %>/", $this->blockOuterContents, $match);
 		if($match) {
+			$this->openingDelimiter = $match[0];
 			$this->name = trim($match[2]);
 			$this->type = $match[1];
-			$this->blockInnerContents = substr($this->allContents, ($this->id+strlen($match[0])), $end-$this->id);			
+			$this->blockInnerContents = substr($this->allContents, ($this->id+strlen($this->openingDelimiter)), $end-$this->id);			
+
 		}
 		// If the start position is 0, and the parent is 0, this must be the root.
 		else if($start == 0 && $parentIndex == 0) {
@@ -513,14 +521,14 @@ class ReflectionTemplate_Block extends Object {
 		if($this->vars != null) return $this->vars;
 		
 		$vars = array ();
-		$search = $this->blockInnerContents;
-		foreach($this->getChildren() as $c) {
-			$search = str_replace($c->getOuterContents(),"",$search);
-		}
-		preg_match_all("/\\$[A-Za-z0-9._]+/", $search, $matches);
-
-		if($matches) {
-			foreach(reset($matches) as $m) {
+		$counts = array ();
+		$booleans = $this->getPossibleBooleans();
+		$search = $this->getTopLevelContent();
+		
+		preg_match_all("/\\$[A-Za-z0-9._]+/", $search, $variables);		
+		
+		if($variables || $booleans) {
+			foreach(reset($variables) as $m) {
 				$label = str_replace("$","", $m);
 
 				// If using the dot syntax, this may be a has_one, or an invocation of a DBField method.
@@ -548,21 +556,51 @@ class ReflectionTemplate_Block extends Object {
 						$vars[$relation] = "has_one";
 					}
 				}
-				elseif(!in_array($label, $vars)) {
-					// This is a <% with %> block, and it's not using a common template accessor,
-					// e.g. $Up, so we can make a guess about the datatype of this variable.
-					if(!$this->isLoop() && !in_array($label, $this->reflector->getTemplateAccessors())) {
-						$vars[$label] = $this->reflector->inferDatatype($label);
-					}
-					// This is a loop, and the variable is not something like $First, $Last, or $Pos.
-					else if($this->isLoop() && !in_array($label, $this->reflector->getListFunctions())) {
-						$vars[$label] = $this->reflector->inferDatatype($label);
-					}
+				else {
+					if(!isset($counts[$label])) $counts[$label] = 0;
+					$counts[$label]++;
+	
+					if(!in_array($label, $vars) && !$this->getChildByName($label)) {
+						// This is a <% with %> block, and it's not using a common template accessor,
+						// e.g. $Up, so we can make a guess about the datatype of this variable.
+						if(!$this->isLoop() && !in_array($label, $this->reflector->getTemplateAccessors())) {
+							$vars[$label] = $this->reflector->inferDatatype($label);
+						}
+						// This is a loop, and the variable is not something like $First, $Last, or $Pos.
+						else if($this->isLoop() && !in_array($label, $this->reflector->getListFunctions())) {
+							$vars[$label] = $this->reflector->inferDatatype($label);
+						}
+					}					
+				}
+			}
+		}
+
+		foreach($booleans as $b) {
+			if(isset($counts[$b])) {
+				$counts[$b]--;
+				if($counts[$b] == 0) {
+					$vars[$b] = 'Boolean';
 				}
 			}
 		}
 
 		return $this->vars = $vars;
+	}
+
+	/**
+	 * Gets all the content at the $Top level. Removes blocks.
+	 * @return string
+	 */
+	public function getTopLevelContent() {
+		$content = $this->blockInnerContents;
+		$offset = strlen($this->openingDelimiter);
+
+		foreach($this->getChildren() as $c) {
+			$length = strlen($c->getOuterContents());
+			$content = substr_replace($content, str_repeat("\n", $length), $c->getRelativeOffset()+$offset, $length);
+		}
+
+		return str_replace("\n", "", $content);
 	}
 
 	/**
@@ -579,21 +617,14 @@ class ReflectionTemplate_Block extends Object {
 	 * @return array
 	 */
 	public function getPossibleBooleans() {
-		// First, gather all the variables so we can match them against any <% if %> blocks.
-		if(!$this->vars) {
-			$this->getVars();
-		}
-
+		if($this->possibleBooleans) return $this->possibleBooleans;
+		
 		$booleans = array ();
-		preg_match_all("/<% (if not|if) [\$]?([A-Za-z0-9._]+)(.*?) %>/", $this->blockInnerContents, $matches);
+		preg_match_all("/<% (if not|if) [\$]?([A-Za-z0-9._]+)(.*?) %>/", $this->getTopLevelContent(), $matches);
 		
 		if($matches) {
 			foreach($matches[2] as $m) {
 				$label = trim($m);
-				// We have already accounted for this variable, e.g. 
-				// it has been invoked as $VarName somewhere.
-				if(array_key_exists($label, $this->vars)) continue;
-				
 				// We already identified this boolean earlier in the loop
 				if(in_array($label, $booleans)) continue;
 
@@ -628,6 +659,19 @@ class ReflectionTemplate_Block extends Object {
 	public function getChildren() {
 		return $this->children;
 	}
+
+	/**
+	 * Gets a child block by name
+	 * @param  string $name 
+	 * @return ReflectionTemplate_Block
+	 */
+	public function getChildByName($name) {
+		foreach($this->getChildren() as $child) {
+			if($child->getName() == $name) return $child;
+		}
+
+		return false;
+	}
 	
 	/**
 	 * Gets the outer contents of the block. Includes the block delimiters
@@ -650,6 +694,18 @@ class ReflectionTemplate_Block extends Object {
 	 * @return int
 	 */
 	public function getID() {
+		return $this->id;
+	}
+
+	/**
+	 * Gets the offset, relative to the parent block
+	 * @return int
+	 */
+	public function getRelativeOffset() {
+		if($this->getParent()) {
+			return $this->id - $this->getParent()->getID();
+		}
+
 		return $this->id;
 	}
 
