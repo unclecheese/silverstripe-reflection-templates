@@ -15,7 +15,7 @@ Given a template such as this:
   <h2>$Headline</h2>
   <div>$Image.CroppedImage(200,200)</div>
   <h3>$Category.Title</h3>
-  <% if $Featured %>it\'s featured<% end_if %>
+  <% if $Featured %>it's featured<% end_if %>
   <ul>
   <% loop $Items %>
     <li>$Title ($Date.Nice)</li>
