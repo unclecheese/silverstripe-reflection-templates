@@ -92,7 +92,7 @@ class ReflectionTemplate extends Object {
 			$vars = $class::get_template_global_variables();
 			if($vars) {
 				foreach($vars as $varName => $func) {
-					$list [] = is_numeric($varName) ? $func : $varName;
+					$list[] = is_numeric($varName) ? strtolower($func) : strtolower($varName);
 				}
 			}
 		}
@@ -115,7 +115,7 @@ class ReflectionTemplate extends Object {
 				foreach($methods as $m) {
 					$name = $m->getName();
 					if(preg_match("/[A-Z]/",$name[0])) {
-						$this->dbfieldFunctions[$name] = $class;
+						$this->dbfieldFunctions[strtolower($name)] = $class;
 					}						
 				}
 			}
@@ -128,7 +128,7 @@ class ReflectionTemplate extends Object {
 			foreach($methods as $m) {
 				$name = $m->getName();
 				if(substr($name,0,8) == "generate") {
-					$this->dbfieldFunctions[substr($name,8)] = "Image";
+					$this->dbfieldFunctions[strtolower(substr($name,8))] = "Image";
 				}						
 			}
 		}
@@ -139,7 +139,7 @@ class ReflectionTemplate extends Object {
 				if(substr($name,0,3) == "get") {
 					$prop = substr($name,3);
 					if(!in_array($prop, array('Title','Name','ID','Parent'))) {
-						$this->dbfieldFunctions[substr($name,3)] = "File";
+						$this->dbfieldFunctions[strtolower(substr($name,3))] = "File";
 					}
 				}						
 			}
@@ -163,7 +163,7 @@ class ReflectionTemplate extends Object {
 				foreach($methods as $m) {
 					$name = $m->getName();					
 					if(preg_match("/[A-Z]/",$name[0])) {
-						$list[] = $name;						
+						$list[] = strtolower($name);
 					}											
 				}
 			}
@@ -249,7 +249,7 @@ class ReflectionTemplate extends Object {
 		// Lopp through the index to create ReflectionTemplate_Block instances for each.
 		foreach($blockIndex as $pos => $data) {
 			$block = new ReflectionTemplate_Block($this, $pos, $data['end'], $data['parent']);
-			if(!in_array($block->getName(), $this->getTemplateAccessors())) {
+			if(!in_array(strtolower($block->getName()), $this->getTemplateAccessors())) {
 				$this->blockManifest[$pos] = $block;
 				if($data['parent'] > 0) {
 					$this->getBlockByID($data['parent'])->addChild($pos);
@@ -536,7 +536,7 @@ class ReflectionTemplate_Block extends Object {
 					list($relation, $name) = explode('.', $label);
 					$name = preg_replace('/\(.*\)/','',$name);
 					// The variable is a core template accessor. Move on.
-					if(in_array($relation, $this->reflector->getTemplateAccessors())) {					
+					if(in_array(strtolower($relation), $this->reflector->getTemplateAccessors())) {					
 						continue;
 					}
 					// The method being called against the variable is a DBField function.
@@ -563,11 +563,11 @@ class ReflectionTemplate_Block extends Object {
 					if(!in_array($label, $vars) && !$this->getChildByName($label)) {
 						// This is a <% with %> block, and it's not using a common template accessor,
 						// e.g. $Up, so we can make a guess about the datatype of this variable.
-						if(!$this->isLoop() && !in_array($label, $this->reflector->getTemplateAccessors())) {
+						if(!$this->isLoop() && !in_array(strtolower($label), $this->reflector->getTemplateAccessors())) {
 							$vars[$label] = $this->reflector->inferDatatype($label);
 						}
 						// This is a loop, and the variable is not something like $First, $Last, or $Pos.
-						else if($this->isLoop() && !in_array($label, $this->reflector->getListFunctions())) {
+						else if($this->isLoop() && !in_array(strtolower($label), $this->reflector->getListFunctions())) {
 							$vars[$label] = $this->reflector->inferDatatype($label);
 						}
 					}					
@@ -629,10 +629,10 @@ class ReflectionTemplate_Block extends Object {
 				if(in_array($label, $booleans)) continue;
 
 				// The condition is based on a core template accessor, e.g. <% if $Menu(2) %>
-				if(in_array($label, $this->reflector->getTemplateAccessors())) continue;
+				if(in_array(strtolower($label), $this->reflector->getTemplateAccessors())) continue;
 
 				// The condition is based on a core list method, e.g. <% if $Last %>
-				if(in_array($label, $this->reflector->getListFunctions())) continue;
+				if(in_array(strtolower($label), $this->reflector->getListFunctions())) continue;
 
 				// The condition is based on a block we have already identified, e.g. <% if $Items %>
 				if($this->reflector->getBlockByName($label)) continue;
