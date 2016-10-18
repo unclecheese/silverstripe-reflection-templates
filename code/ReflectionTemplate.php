@@ -540,10 +540,11 @@ class ReflectionTemplate_Block extends Object {
 						continue;
 					}
 					// The method being called against the variable is a DBField function.
-					// Use that information to assign a probable FieldType
-					if(array_key_exists($name, $dbFieldFunctions)) {
-						$class = $dbFieldFunctions[$name];
-						$vars[$relation] = $dbFieldFunctions[$name];
+					// Use that information to assign a probable FieldType					
+					$methodName = strtolower($name);
+					if(array_key_exists($methodName, $dbFieldFunctions)) {
+						$class = $dbFieldFunctions[$methodName];
+						$vars[$relation] = $dbFieldFunctions[$methodName];
 					}
 					// The variable name is the same as a ViewableData class. Chances are
 					// this is a has_one to another class, e.g. $has_one = array ('File' => 'File');
