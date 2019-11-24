@@ -1,5 +1,5 @@
 {
-    "name": "sunnysideup/reflection-templates",
+    "name": "unclecheese/reflection-templates",
     "description": "Provides introspection of SilverStripe templates with an API for getting variables and blocks, much like the PHP ReflectionClass.",
     "type": "silverstripe-module",
     "keywords": ["silverstripe", "templates"],
