@@ -41,7 +41,7 @@
  * @author  Uncle Cheese <unclecheese@leftandmain.com>
  * @package  silverstripe-reflection-templates
  */
-class ReflectionTemplate extends Object {
+class ReflectionTemplate extends SS_Object {
 	
 	/**
 	 * A computed list of all the core template accessors, e.g. $Up, $Top
@@ -381,7 +381,7 @@ class ReflectionTemplate extends Object {
  * @author  Uncle Cheese <unclecheese@leftandmain.com>
  * @package  silverstripe-reflection-templates
  */
-class ReflectionTemplate_Block extends Object {
+class ReflectionTemplate_Block extends SS_Object {
 	
 	/**
 	 * A reference to the parent {@link ReflectionTemplate}
