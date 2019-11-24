@@ -381,7 +381,7 @@ class ReflectionTemplate extends SS_Object {
  * @author  Uncle Cheese <unclecheese@leftandmain.com>
  * @package  silverstripe-reflection-templates
  */
-class ReflectionTemplate_Block extends Object {
+class ReflectionTemplate_Block extends SS_Object {
 	
 	/**
 	 * A reference to the parent {@link ReflectionTemplate}
